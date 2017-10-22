@@ -388,7 +388,6 @@ REG,Regency Centers Corporation,Real Estate
 REGN,Regeneron,Health Care
 RF,Regions Financial Corp.,Financials
 RSG,Republic Services Inc,Industrials
-RAI,Reynolds American Inc.,Consumer Staples
 RHI,Robert Half International,Industrials
 ROK,Rockwell Automation Inc.,Industrials
 COL,Rockwell Collins,Industrials
@@ -428,7 +427,7 @@ TGT,Target Corp.,Consumer Discretionary
 TEL,TE Connectivity Ltd.,Information Technology
 TGNA,"Tegna, Inc.",Consumer Discretionary
 TDC,Teradata Corp.,Information Technology
-TSO,Tesoro Petroleum Co.,Energy
+ANDV,Andeavor,Energy
 TXN,Texas Instruments,Information Technology
 TXT,Textron Inc.,Industrials
 BK,The Bank of New York Mellon Corp.,Financials
@@ -499,7 +498,6 @@ XRX,Xerox Corp.,Information Technology
 XLNX,Xilinx Inc,Information Technology
 XL,XL Capital,Financials
 XYL,Xylem Inc.,Industrials
-YHOO,Yahoo Inc.,Information Technology
 YUM,Yum! Brands Inc,Consumer Discretionary
 ZBH,Zimmer Biomet Holdings,Health Care
 ZION,Zions Bancorp,Financials
