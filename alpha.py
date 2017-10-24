@@ -91,14 +91,16 @@ def compare_scatter(daily_rets, sym1, sym2):
 
 
 if __name__ == "__main__":
+    every_stock = pd.read_csv("stockinfo.csv", skip_blank_lines=True)["Symbol"].tolist()
     all_stocks = ["SPY", "UAA", "UA", "MSFT", "MU", "V", "ADBE", "AMGN", "SBUX"]
     alpha_vantage_cols = ["1. open", "2. high", "3. low", "4. close", "5. adjusted close", "6. volume", "7. dividend amount", "8. split coefficent"]
     new_col_names = ["Open", "High", "Low", "Close", "Adj. Close", "Volume", "Dividend", "Split Coefficent"]
     col_names = dict(zip(alpha_vantage_cols, new_col_names))
     #pickle_stock_data(all_stocks, col_names)
+    #pickle_stock_data(every_stock, col_names)
 
     start = "2000-01-01"
-    end = "2017-10-23"
+    end = pandas.to_datetime('today')
     window = 20
     
     main_df = create_main_df(all_stocks, start, end)
