@@ -83,7 +83,7 @@ def create_daily_rets_hist(daily_rets, symbol):
     plt.axvline(x=-stddev, color='r', linestyle='dashed', linewidth=2)
     plt.show()
 
-def print_compare_scatter(daily_rets, sym1, sym2):
+def compare_scatter(daily_rets, sym1, sym2):
     daily_rets.plot(kind='scatter', x=sym1, y=sym2)
     beta2, alpha2 = np.polyfit(daily_rets[sym1], daily_rets[sym2], 1)
     plt.plot(daily_rets[sym1], beta2 * daily_rets[sym1] + alpha2, '-', color='r')
@@ -111,4 +111,4 @@ if __name__ == "__main__":
     #create_daily_rets_hist(daily_returns, "UA")
 
     print(daily_returns.corr(method='pearson'))
-    print_compare_scatter(daily_returns, "SPY", "MSFT")
+    compare_scatter(daily_returns, "SPY", "MSFT")
