@@ -1,17 +1,28 @@
-import http.client
-import json
-import pandas as pd
+"""Testing financial analysis using Udacity ML Finance course."""
+
 import os
+import json
+import math
+import http.client
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.optimize  as spo
+from alpha_key import API_KEY
+
 
 def get_pickle_path(symbol):
+    """Returns the path of where the pickled dataframe should be stored."""
     return os.path.join("stock_pickles", "{}.pickle".format(symbol))
 
+
 def pickle_stock_data(all_stocks, col_names):
+    """Pickles data from alpha vantage using dataframes for the specified stocks."""
     conn = http.client.HTTPSConnection("www.alphavantage.co")
     for symbol in all_stocks:
-        conn.request("GET", "/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={}&outputsize=full&apikey=UDPSK0CEP622JWE9".format(symbol)) 
+        conn.request(
+            "GET", "/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={}&outputsize=full&apikey={}"
+            .format(symbol, API_KEY))
         res = conn.getresponse()
         data = res.read()
 
@@ -24,55 +35,65 @@ def pickle_stock_data(all_stocks, col_names):
 
 
 def create_main_df(all_stocks, start, end):
+    """Creates the main_df using specified dates, and adjusted closes for specified stocks."""
     dates = pd.date_range(start, end)
     main_df = pd.DataFrame(index=dates)
     for symbol in all_stocks:
         temp_df = pd.read_pickle(get_pickle_path(symbol))
         temp_df.rename(columns={"Adj. Close": symbol}, inplace=True)
         main_df = main_df.join(temp_df[symbol])
-        
+
     main_df.dropna(how="all", inplace=True)
     main_df.fillna(method="ffill", inplace=True)
     main_df.fillna(method="backfill", inplace=True)
     main_df = main_df.astype(float)
     return main_df
 
+
 def plot_main(main_df):
+    """Plots the main_df."""
     main_df.plot()
     plt.show()
 
+
 def plot_bollinger_bands(main_df, symbol, window):
+    """Plots the bollinger bands for a specified stock."""
     rmean = main_df[symbol].rolling(center=False, window=window).mean()
     rstddev = main_df[symbol].rolling(center=False, window=window).std()
 
     upper_band, lower_band = get_bollinger_bands(rmean, rstddev)
 
-    ax = main_df[symbol].plot(title="Bollinger Bands", label=symbol)
-    rmean.plot(label='Rolling mean', ax=ax)
-    upper_band.plot(label='upper band', ax=ax)
-    lower_band.plot(label='lower band', ax=ax)
-    ax.legend(loc='upper left')
+    ax1 = main_df[symbol].plot(title="Bollinger Bands", label=symbol)
+    rmean.plot(label='Rolling mean', ax=ax1)
+    upper_band.plot(label='upper band', ax=ax1)
+    lower_band.plot(label='lower band', ax=ax1)
+    ax1.legend(loc='upper left')
 
     plt.show()
 
-def compute_daily_returns(df):
+
+def compute_daily_returns(main_df):
     """Compute and return the daily return values."""
-    # Note: Returned DataFrame must have the same number of rows
-    returns = (df/df.shift(1)) - 1
+    returns = (main_df / main_df.shift(1)) - 1
     returns.ix[0, :] = 0
     return returns
 
-def compute_cumulative_rets(df):
-    returns = (df.ix[-1, :]/df.ix[0, :]) - 1
+
+def compute_cumulative_rets(main_df):
+    """Compute and return the cumulative return values."""
+    returns = (main_df.ix[-1, :] / main_df.ix[0, :]) - 1
     return returns
 
-def get_bollinger_bands(rm, rstd):
+
+def get_bollinger_bands(rmean, rstd):
     """Return upper and lower Bollinger Bands."""
-    upper_band = 2 * rstd + rm
-    lower_band = -2 * rstd + rm
+    upper_band = 2 * rstd + rmean
+    lower_band = -2 * rstd + rmean
     return upper_band, lower_band
 
+
 def create_daily_rets_hist(daily_rets, symbol):
+    """Creates a histogram for the daily returns."""
     daily_rets[symbol].hist(bins=20)
 
     mean = daily_rets[symbol].mean()
@@ -83,34 +104,109 @@ def create_daily_rets_hist(daily_rets, symbol):
     plt.axvline(x=-stddev, color='r', linestyle='dashed', linewidth=2)
     plt.show()
 
+
 def compare_scatter(daily_rets, sym1, sym2):
+    """Creates a scatter plot to compare two stocks."""
     daily_rets.plot(kind='scatter', x=sym1, y=sym2)
     beta2, alpha2 = np.polyfit(daily_rets[sym1], daily_rets[sym2], 1)
-    plt.plot(daily_rets[sym1], beta2 * daily_rets[sym1] + alpha2, '-', color='r')
+    plt.plot(daily_rets[sym1], beta2 *
+             daily_rets[sym1] + alpha2, '-', color='r')
     plt.show()
 
 
-if __name__ == "__main__":
-    every_stock = pd.read_csv("stockinfo.csv", skip_blank_lines=True)["Symbol"].tolist()
-    all_stocks = ["SPY", "UAA", "UA", "MSFT", "MU", "V", "ADBE", "AMGN", "SBUX"]
-    alpha_vantage_cols = ["1. open", "2. high", "3. low", "4. close", "5. adjusted close", "6. volume", "7. dividend amount", "8. split coefficent"]
-    new_col_names = ["Open", "High", "Low", "Close", "Adj. Close", "Volume", "Dividend", "Split Coefficent"]
-    col_names = dict(zip(alpha_vantage_cols, new_col_names))
+def calculate_sharpe_ratio(daily_returns, risk_free_rate):
+    """Calculates the sharpe ratios for the stocks."""
+    mean_daily_rets = daily_returns.mean()
+    daily_rets_offset = (daily_returns - risk_free_rate).mean()
+    risk = daily_returns.std()
+    sharpe_ratio = math.sqrt(252) * (daily_rets_offset / risk)
+    return sharpe_ratio
+
+def total_sharpe(splits, daily_rets, risk_free_rate):
+    return -1 * (splits * calculate_sharpe_ratio(daily_rets, risk_free_rate)).sum()
+
+def maximize_sharpe(splits, daily_rets, total_sharpe_func, risk_free_rate):
+    bounds = [(0, 1)] * len(daily_rets.columns)
+    print(bounds)
+    cons = ({'type': 'eq', 'fun': lambda x: x.sum() - 1})
+    result = spo.minimize(total_sharpe_func, splits, args=(daily_rets, risk_free_rate), method='SLSQP', 
+            options={'disp':True}, bounds=bounds, constraints=cons)
+    return result.x
+
+def optimize_portfolio_sr(daily_rets, risk_free_rate):
+    print("Original sharpe ratios")
+    init_sharpes = calculate_sharpe_ratio(daily_rets, risk_free_rate)
+    print(init_sharpes)
+    
+    even_split = 1.0 / float(len(daily_rets.columns))
+    starting_splits = [even_split] * len(daily_rets.columns)
+    print("Starting sharpe sum")
+    print((init_sharpes *starting_splits).sum())
+    print("Starting daily returns")
+    print((daily_rets * starting_splits).mean().sum())
+    print("Starting splits:")
+    print(starting_splits)
+
+    final_splits = maximize_sharpe(starting_splits, daily_rets, total_sharpe, risk_free_rate)
+    print("Final splits")
+    print(final_splits)
+    print(final_splits.sum())
+    print("Final sharpe sum")
+    print((init_sharpes * final_splits).sum())
+    print("Final daily returns")
+    print((daily_rets * final_splits).mean().sum())
+
+
+def main():
+    """Main execution of tests currently."""
+    all_stocks = ["SPY", "UAA", "MSFT",
+                  "MU", "V", "ADBE", "AMGN", "SBUX"]
+
+    # Used for generating the pickled data frames from alpha vantage.
+    # every_stock = pd.read_csv("stockinfo.csv", skip_blank_lines=True)["Symbol"].tolist()
+    # alpha_vantage_cols = ["1. open", "2. high", "3. low", "4. close",
+    #                      "5. adjusted close", "6. volume", "7. dividend amount",
+    #                      "8. split coefficent"]
+    # new_col_names = ["Open", "High", "Low", "Close",
+    #                 "Adj. Close", "Volume", "Dividend", "Split Coefficent"]
+    #col_names = dict(zip(alpha_vantage_cols, new_col_names))
     #pickle_stock_data(all_stocks, col_names)
     #pickle_stock_data(every_stock, col_names)
 
-    start = "2000-01-01"
-    end = pandas.to_datetime('today')
-    window = 20
-    
+    start = "2015-04-01"
+    end = pd.to_datetime('today')
+    risk_free_rate = 0
+
     main_df = create_main_df(all_stocks, start, end)
     #plot_main(main_df)
+
+    # Used to create a graph of bollinger bands for a stock
+    #window = 20
     #plot_bollinger_bands(main_df, "MU", window)
     daily_returns = compute_daily_returns(main_df)
+    print("Kurtosis:")
     print(daily_returns.kurtosis())
     cumulative_rets = compute_cumulative_rets(main_df)
 
     #create_daily_rets_hist(daily_returns, "UA")
 
+    print("\nPearson correlation:")
     print(daily_returns.corr(method='pearson'))
-    compare_scatter(daily_returns, "SPY", "MSFT")
+    #compare_scatter(daily_returns, "SPY", "MSFT")
+    
+    print("\nDaily returns:")
+    print(daily_returns.head())
+    print("\nCumulative returns:")
+    print(cumulative_rets)
+    print("\nMean daily returns:")
+    print(daily_returns.mean())
+    print("\nRisk:")
+    print(daily_returns.std())
+    sharpe_ratio = calculate_sharpe_ratio(daily_returns, risk_free_rate)
+    print("\nSharpe ratio")
+    print(sharpe_ratio)
+
+    optimize_portfolio_sr(daily_returns, risk_free_rate)
+
+if __name__ == "__main__":
+    main()
