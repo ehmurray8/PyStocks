@@ -3,21 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-<<<<<<< HEAD
 # Alpha Vantage API Key
 alpha_key.py
 
-=======
->>>>>>> 48592c4d0144a0cd7d049e1d66815b1d0e69a009
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
-<<<<<<< HEAD
-=======
-env/
->>>>>>> 48592c4d0144a0cd7d049e1d66815b1d0e69a009
 build/
 develop-eggs/
 dist/
@@ -33,10 +26,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-<<<<<<< HEAD
 MANIFEST
-=======
->>>>>>> 48592c4d0144a0cd7d049e1d66815b1d0e69a009
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -65,11 +55,8 @@ coverage.xml
 
 # Django stuff:
 *.log
-<<<<<<< HEAD
 .static_storage/
 .media/
-=======
->>>>>>> 48592c4d0144a0cd7d049e1d66815b1d0e69a009
 local_settings.py
 
 # Flask stuff:
@@ -97,7 +84,6 @@ celerybeat-schedule
 # SageMath parsed files
 *.sage.py
 
-<<<<<<< HEAD
 # Environments
 .env
 .venv
@@ -106,15 +92,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-=======
-# dotenv
-.env
-
-# virtualenv
-.venv
-venv/
-ENV/
->>>>>>> 48592c4d0144a0cd7d049e1d66815b1d0e69a009
 
 # Spyder project settings
 .spyderproject
